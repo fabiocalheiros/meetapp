@@ -6,10 +6,13 @@ import File from '../models/File';
 
 class MeetupsController {
   async index(req, res) {
+    const { page = 1 } = req.query;
+
     const meetups = await Meetup.findAll({
       where: {},
       order: ['date_event'],
-      limit: 20,
+      limit: 10,
+      offset: (page - 1) * 10,
       attributes: [
         'id',
         'title',
