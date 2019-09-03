@@ -120,6 +120,44 @@ class MeetupsController {
       banner_id,
     });
   }
+
+  async delete(req, res) {
+    const { id } = req.params;
+
+    // checa se o meetup existe
+    const meetupExists = await Meetup.findOne({ where: { id } });
+
+    if (!meetupExists) {
+      return res.status(400).json({ error: 'Meetup not exist' });
+    }
+
+    // checa se o usuario é dono daquele meetup
+    const checkOwnerMeetup = await Meetup.findOne({
+      where: {
+        user_id: req.userId,
+        id,
+      },
+    });
+
+    if (!checkOwnerMeetup) {
+      return res
+        .status(400)
+        .json({ error: 'This Meetup does not currently belong to this user.' });
+    }
+
+    // verifica se a data marcada no evento ja passou;
+    if (isBefore(checkOwnerMeetup.date_event, new Date())) {
+      return res.status(400).json({ error: 'This event has already happened' });
+    }
+
+    await Meetup.destroy({
+      where: {
+        id,
+      },
+    });
+
+    return res.status(200).json({ sucess: 'Meetup excluded with sucess.' });
+  }
 }
 
 export default new MeetupsController();
