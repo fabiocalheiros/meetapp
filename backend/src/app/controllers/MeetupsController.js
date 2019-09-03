@@ -1,8 +1,40 @@
 import * as Yup from 'yup';
 import { startOfHour, parseISO, isBefore } from 'date-fns';
 import Meetup from '../models/Meetups';
+import User from '../models/User';
+import File from '../models/File';
 
 class MeetupsController {
+  async index(req, res) {
+    const meetups = await Meetup.findAll({
+      where: {},
+      order: ['date_event'],
+      limit: 20,
+      attributes: [
+        'id',
+        'title',
+        'description',
+        'location',
+        'banner_id',
+        'date_event',
+      ],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name'],
+        },
+        {
+          model: File,
+          as: 'banner',
+          attributes: ['name', 'path', 'url'],
+        },
+      ],
+    });
+
+    return res.json(meetups);
+  }
+
   async store(req, res) {
     const schema = Yup.object().shape({
       title: Yup.string().required(),
@@ -66,9 +98,7 @@ class MeetupsController {
 
     // verifica se a data marcada no evento ja passou;
     if (isBefore(checkOwnerMeetup.date_event, new Date())) {
-      return res
-        .status(400)
-        .json({ error: 'This event has already happened', date_event });
+      return res.status(400).json({ error: 'This event has already happened' });
     }
 
     // verifica se a data que o usuario está passando ja passou;
