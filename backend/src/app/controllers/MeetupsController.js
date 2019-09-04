@@ -16,11 +16,24 @@ class MeetupsController {
     const where = {};
     const { page = 1 } = req.query;
 
+    // verificar se a data de pesquisa é anterior a hoje
+    if (isBefore(parseISO(req.query.date), new Date())) {
+      return res
+        .status(400)
+        .json({ error: 'The date you entered has passed.' });
+    }
+
+    // verifica se o usario preencheu alguma data
     if (req.query.date) {
       const searchDate = parseISO(req.query.date);
-
+      // procura por todos os eventos daqele dia
       where.date_event = {
         [Op.between]: [startOfDay(searchDate), endOfDay(searchDate)],
+      };
+    } else {
+      // procura por eventos que ainda não aconteceram
+      where.date_event = {
+        [Op.gt]: new Date(),
       };
     }
 
