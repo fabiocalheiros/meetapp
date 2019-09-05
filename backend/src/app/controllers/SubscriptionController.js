@@ -24,10 +24,6 @@ class SubscriptionController {
     }
 
     // verifica se o usuario ja esta inscrito no meetup
-    // const checkUserSubscription = await Subscription.findOne({
-    //   where: { meetup_id: req.params.id, user_id: req.userId },
-    // });
-
     const checkUserSubscription = await Subscription.findOne({
       where: { meetup_id: req.params.id, user_id: req.userId },
     });
