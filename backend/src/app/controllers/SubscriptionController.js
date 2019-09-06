@@ -1,12 +1,24 @@
 import { isBefore } from 'date-fns';
 import Subscription from '../models/Subscriptions';
 import Meetups from '../models/Meetups';
+import User from '../models/User';
+
+import NewSubscribeMail from '../jobs/NewSubscribeMail';
+import Queue from '../../lib/Queue';
 
 class SubscriptionController {
   async store(req, res) {
     let sendDate = '';
 
-    const meetup = await Meetups.findByPk(req.params.id);
+    const meetup = await Meetups.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'organizer',
+          attributes: ['name', 'email'],
+        },
+      ],
+    });
 
     // verifica se o meetup existe
     if (!meetup) {
@@ -24,10 +36,6 @@ class SubscriptionController {
     }
 
     // verifica se o usuario ja esta inscrito no meetup
-    // const checkUserSubscription = await Subscription.findOne({
-    //   where: { meetup_id: req.params.id, user_id: req.userId },
-    // });
-
     const checkUserSubscription = await Subscription.findOne({
       where: { meetup_id: req.params.id, user_id: req.userId },
     });
@@ -56,6 +64,19 @@ class SubscriptionController {
       user_id: req.userId,
       meetup_id: req.params.id,
       date_event: sendDate,
+    });
+
+    const getUserData = await User.findByPk(req.userId);
+
+    const dataUser = {
+      name: getUserData.name,
+      email: getUserData.email,
+    };
+
+    meetup.dataValues.userSubscribe = dataUser;
+
+    await Queue.add(NewSubscribeMail.key, {
+      meetup,
     });
 
     return res.json(new_subscription);
